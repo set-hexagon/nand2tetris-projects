@@ -1,17 +1,23 @@
 import CodeWriter
+from collections import defaultdict
+from pathlib import Path
 
+lineno = defaultdict(int)
 #goes through file line by line and makes another file with same name
 def parse(file):
-    with open(file, 'r') as VMCode, open(file.strip(".vm") + ".asm", 'w') as AssCode:
-        filename = file.strip(".vm")
+    filename = Path(file).stem
+    with open(file, 'r') as VMCode, open(filename + ".asm", 'w') as AssCode:
 
         #goes through the code line by line
         line = VMCode.readline()
         while line:
             if checkCode(line):                    #checks if the read line is not a whitespace or comment
+                lineno[filename] += 1
                 ass = CodeWriter.translate(line,filename).split()      
                 
                 AssCode.write("\n//" + line)       #writes the VM line
+                if line[-1] !=  '\n' : AssCode.write("\n")      #last lines don't have \n
+
                 for a in ass:
                     AssCode.write(a)               #writes the assembly line
                     AssCode.write("\n")
@@ -32,7 +38,8 @@ def checkCode(line):
 
 #returns the command type
 def cmdType(line):
-    line = line.split()
+    if type(line) == str:
+        line = line.split()
 
     arithmeticOrLogic = ["add", "sub", "neg", "eq", "gt", "lt", "and", "or", "not"]
 
@@ -42,6 +49,12 @@ def cmdType(line):
         return "C_PUSH"
     elif line[0] == "pop":
         return "C_POP"
+    elif line[0] == "label":
+        return "C_LABEL"
+    elif line[0] == "goto":
+        return "C_GOTO"
+    elif line[0] == "if-goto":
+        return "C_IF"
 
 #returns the first argument
 def arg1(line):

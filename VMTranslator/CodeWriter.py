@@ -1,5 +1,6 @@
 import Parser
 
+labels = {}
 def translate(lineRaw,filename):
     assline = []
     line = lineRaw.split()
@@ -127,4 +128,16 @@ def translate(lineRaw,filename):
                        "M=!M "                  # y = !y
                        "@SP M=M+1")             # SP++
         
+
+    elif Parser.cmdType(line) == "C_LABEL":
+        assline = f"({line[1]})"
+    
+    elif Parser.cmdType(line) == "C_GOTO":
+        assline = f"@{line[1]} 0;JMP"
+    
+    elif Parser.cmdType(line) == "C_IF":
+        assline = ("@SP A=M-1 D=M "              
+                   f"@{line[1]} D;JGT"          # if RAM[SP-1] > 0 : jump to label
+                    )
+
     return assline
