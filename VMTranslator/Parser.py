@@ -4,9 +4,9 @@ from pathlib import Path
 
 lineno = defaultdict(int)
 #goes through file line by line and makes another file with same name
-def parse(file):
+def parse(file, mode):
     filename = Path(file).stem
-    with open(file, 'r') as VMCode, open(filename + ".asm", 'w') as AssCode:
+    with open(file, 'r') as VMCode, open(filename + ".asm", mode) as AssCode:
 
         #goes through the code line by line
         line = VMCode.readline()
@@ -55,6 +55,12 @@ def cmdType(line):
         return "C_GOTO"
     elif line[0] == "if-goto":
         return "C_IF"
+    elif line[0] == "function":
+        return "C_FUNCTION"
+    elif line[0] == "call":
+        return "C_CALL"
+    elif line[0] == "return":
+        return "C_RETURN"
 
 #returns the first argument
 def arg1(line):

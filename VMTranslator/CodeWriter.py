@@ -1,6 +1,8 @@
 import Parser
+from collections import defaultdict
 
 labels = {}
+run_i = defaultdict(int)
 def translate(lineRaw,filename):
     assline = []
     line = lineRaw.split()
@@ -139,5 +141,42 @@ def translate(lineRaw,filename):
         assline = ("@SP A=M-1 D=M "              
                    f"@{line[1]} D;JGT"          # if RAM[SP-1] > 0 : jump to label
                     )
+        
+    elif Parser.cmdType(line) == "C_CALL":
+        foo = line[1]
+        nArgs = line[2]
+        run = run_i[foo] + 1
+        ret_addr = f"{filename}.{foo}$ret.{run}"
+
+        assline = (f"@{ret_addr} D=A @SP A=M M=D @SP M=M+1 "         # push return_address
+                   "@LCL D=M @SP A=M M=D @SP M=M+1 "                 # push LCL
+                   "@ARG D=M @SP A=M M=D @SP M=M+1 "                 # push ARG
+                   "@THIS D=M @SP A=M M=D @SP M=M+1 "                # push THIS
+                   "@THAT D=M @SP A=M M=D @SP M=M+1 "                # push THAT
+                   f"@SP D=M @{nArgs} D=D-A @5 D=D-A @ARG M=D "      # ARG = SP - nArgs - 5
+                   "@SP D=M @LCL M=D "                               # LCL = SP
+                   f"@{foo} 0;JMP "                                  # goto function
+                   f"({ret_addr})"                                   # return_address label
+                   )    
+        
+    elif Parser.cmdType(line) == "C_FUNCTION":
+        foo = line[1]
+        nVars = line[2]
+
+        assline = f"({foo}) "                        # function label
+        for i in range(nVars):
+            assline += "@SP A=M M=0 @SP M=M+1 "      # inserting nVars 0 in the stack
+
+    elif Parser.cmdType(line) == "C_RETURN":
+        assline = ("@LCL D=M @endFrame M=D "                    # endFrame = LCL
+                   "@5 D=D-A @D D=M @retAddr M=D "              # retAddr = *(endFrame - 5)
+                   "@SP A=M D=M @ARG M=D "                      # ARG = pop() - puts the return value in ARG
+                   "D=A+1 @SP M=D "                             # SP = ARG + 1
+                   "@endFrame D=A @1 D=D-A @D D=M @THAT M=D "   # THAT = *(endFrame - 1)
+                   "@endFrame D=A @2 D=D-A @D D=M @THIS M=D "   # THIS = *(endFrame - 2)
+                   "@endFrame D=A @3 D=D-A @D D=M @ARG M=D "    # ARG = *(endFrame - 3)
+                   "@endFrame D=A @4 D=D-A @D D=M @LCL M=D "    # LCL = *(endFrame - 4)
+                   "@retAddr 0;JMP"
+                   )         
 
     return assline
