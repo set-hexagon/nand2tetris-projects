@@ -3,6 +3,8 @@
 #assumes the VM code is correct
 
 #pass VC code file as CLA, output assembly file will be generated with the sameName.asm
+
+#* if AttributeError: 'list' object has no attribute 'split' happens : code writer encountered something unexpected
 import sys
 import os
 from pathlib import Path

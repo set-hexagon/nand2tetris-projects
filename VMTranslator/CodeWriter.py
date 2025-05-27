@@ -38,6 +38,12 @@ def translate(lineRaw,filename):
                         "@addr A=M M=D"
                         )
         
+        elif seg == "pointer":
+            # pointer 0 => POP THIS
+            # pointer 1 => POP THAT
+            if line[2] == "0": assline = "@SP M=M-1 A=M D=M @THIS M=D"
+            if line[2] == "1": assline = "@SP M=M-1 A=M D=M @THAT M=D"
+        
     elif line[0] == 'push':
         seg = line[1]
         i = line[2]
@@ -75,6 +81,12 @@ def translate(lineRaw,filename):
                         "@SP A=M M=D "
                         "@SP M=M+1"
                         )
+            
+        elif seg == "pointer":
+            # pointer 0 => push THIS
+            # pointer 1 => push THAT
+            if line[2] == "0": assline = "@THIS D=M @SP A=M M=D @SP M=M+1"
+            if line[2] == "1": assline = "@THAT D=M @SP A=M M=D @SP M=M+1"
             
     elif Parser.cmdType(lineRaw) == "C_ARITHMETIC":
         if line[0] == "add":
@@ -138,7 +150,7 @@ def translate(lineRaw,filename):
         assline = f"@{line[1]} 0;JMP"
     
     elif Parser.cmdType(line) == "C_IF":
-        assline = ("@SP A=M-1 D=M "              
+        assline = ("@SP M=M-1 A=M D=M "              
                    f"@{line[1]} D;JGT"          # if RAM[SP-1] > 0 : jump to label
                     )
         
@@ -178,5 +190,5 @@ def translate(lineRaw,filename):
                    "@endFrame D=A @4 D=D-A @D D=M @LCL M=D "    # LCL = *(endFrame - 4)
                    "@retAddr 0;JMP"
                    )         
-
+        
     return assline

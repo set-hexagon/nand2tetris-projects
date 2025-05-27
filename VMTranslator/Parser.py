@@ -9,8 +9,8 @@ def parse(file, mode):
     with open(file, 'r') as VMCode, open(filename + ".asm", mode) as AssCode:
 
         #goes through the code line by line
-        line = VMCode.readline()
-        while line:
+        for line in VMCode:
+            line = line.strip()
             if checkCode(line):                    #checks if the read line is not a whitespace or comment
                 lineno[filename] += 1
                 ass = CodeWriter.translate(line,filename).split()      
@@ -26,12 +26,9 @@ def parse(file, mode):
                 AssCode.write(line + "\n")         #writes the comments
 
 
-            line = VMCode.readline() 
-
-
 #checks if the read line is not a whitespace or comment
 def checkCode(line):
-    if line.startswith("\n") or line.startswith("//"):
+    if line.startswith("\n") or line.startswith("//") or line == '':
         return False
     
     return True
