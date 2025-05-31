@@ -106,41 +106,64 @@ def translate(lineRaw,filename):
         
         elif line[0] == "eq":
             assline = ("@SP M=M-1 A=M D=M "         # SP--
-                       "@SP M=M-1 A=M D=D-M M=!D "  # x == y ? 1 : 0
+                       "@SP M=M-1 A=M D=D-M "       # x-y != 0: goto NOTZERO
+                       "@NOTZERO D;JGT "
+                       "@SP A=M M=1 @ENDEQ 0;JMP "  # x-y == 0: RAM[SP] = 1 , goto ENDEQ
+                       "(NOTZERO) "
+                       "@SP A=M M=0 "               # RAM[SP] = 0
+                       "(ENDEQ) "
                        "@SP M=M+1")                 # SP++
         
         elif line[0] == "gt":
-            assline = ("@SP M=M-1 A=M D=M "     # SP--
-                       "@SP M=M-1 A=M D=M-D "   # D = x-y
+            assline = ("@SP M=M-1 A=M D=M "         # SP--
+                       "@SP M=M-1 A=M D=M-D "       # D = x-y != 0: goto GREATER
                        "@GREATER D;JGT "  
-                       "@SP A=M M=0 "           # if x-y < 0 RAM[SP] = 0
+                       "@SP A=M M=0 @ENDGT 0;JMP "  # if x-y < 0 RAM[SP] = 0, goto ENDGT
                        "(GREATER) "
-                       "@SP A=M M=1 "           # if x-y > 0 RAM[SP] = 1
-                       "@SP M=M+1")             # SP++
+                       "@SP A=M M=1 "               # if x-y > 0 RAM[SP] = 1
+                       "(ENDGT) "
+                       "@SP M=M+1")                 # SP++
             
         elif line[0] == "lt":
-            assline = ("@SP M=M-1 A=M D=M "     # SP--
-                       "@SP M=M-1 A=M D=M-D "   # D = x-y
-                       "@GREATER D;JGT "  
-                       "@SP A=M M=1 "           # if x-y < 0 RAM[SP] = 1
-                       "(GREATER) "
-                       "@SP A=M M=0 "           # if x-y > 0 RAM[SP] = 0
-                       "@SP M=M+1")             # SP++
+            assline = ("@SP M=M-1 A=M D=M "         # SP--
+                       "@SP M=M-1 A=M D=M-D "       # D = x-y != 0: goto NOTLESS
+                       "@NOTLESS D;JGT "  
+                       "@SP A=M M=1 @ENDLT 0;JMP "  # if x-y < 0 RAM[SP] = 1, goto ENDLT
+                       "(NOTLESS) "
+                       "@SP A=M M=0 "               # if x-y > 0 RAM[SP] = 0
+                       "(ENDLT) "
+                       "@SP M=M+1")                 # SP++
             
         elif line[0] == "and":
-            assline = ("@SP M=M-1 A=M D=M "     # SP--
-                       "@SP M=M-1 A=M M=D&M "   # x = x & y
-                       "@SP M=M+1")             # SP++
+            assline = ("@SP M=M-1 A=M D=M "         # SP--
+                       "@AND D;JEQ "                # if y=0: goto AND
+                       "@SP M=M-1 A=M D=M "         
+                       "@AND D;JEQ "                # if x=0: goto AND
+                       "@SP A=M M=1 @ENDAND 0;JMP " # if x and y != 0: RAM[SP] = 1
+                       "(AND) "
+                       "@SP A=M M=0 "                # RAM[SP] = 0
+                       "(ENDAND) "     
+                       "@SP M=M+1")                 # SP++
              
         elif line[0] == "or":
-            assline = ("@SP M=M-1 A=M D=M "     # SP--
-                       "@SP M=M-1 A=M M=D|M "   # x = x | y
-                       "@SP M=M+1")             # SP++
+            assline = ("@SP M=M-1 A=M D=M "         # SP--
+                       "@OR D;JNE "                 # if y!=0: goto OR
+                       "@SP M=M-1 A=M D=M "       
+                       "@OR D;JNE "                 # if x!=0; goto OR
+                       "@SP A=M M=0 @ENDOR 0;JMP "  # if x and y are 0 RAM[SP] = 0
+                       "(OR) "
+                       "@SP A=M M=1 "               # RAM[SP] = 1
+                       "(ENDOR) "
+                       "@SP M=M+1")                 # SP++
             
         elif line[0] == "not":
-            assline = ("@SP M=M-1 A=M "         # SP--
-                       "M=!M "                  # y = !y
-                       "@SP M=M+1")             # SP++
+            assline = ("@SP M=M-1 A=M D=M "         # SP--
+                       "@ZERO D;JEQ "               # if y == 0: goto ZERO
+                       "@SP A=M M=0 @ENDNOT 0;JMP " # if y != 0: y = 0
+                       "(ZERO) "
+                       "@SP A=M M=1 "               # if y == 0: y = 1
+                       "(ENDNOT) "
+                       "@SP M=M+1")                 # SP++
         
 
     elif Parser.cmdType(line) == "C_LABEL":
@@ -157,8 +180,7 @@ def translate(lineRaw,filename):
     elif Parser.cmdType(line) == "C_CALL":
         foo = line[1]
         nArgs = line[2]
-        run = run_i[foo] + 1
-        ret_addr = f"{filename}.{foo}$ret.{run}"
+        ret_addr = f"{foo}$ret.{Parser.lineno[filename]}"
 
         assline = (f"@{ret_addr} D=A @SP A=M M=D @SP M=M+1 "         # push return_address
                    "@LCL D=M @SP A=M M=D @SP M=M+1 "                 # push LCL
@@ -173,22 +195,22 @@ def translate(lineRaw,filename):
         
     elif Parser.cmdType(line) == "C_FUNCTION":
         foo = line[1]
-        nVars = line[2]
+        nVars = int(line[2])
 
         assline = f"({foo}) "                        # function label
         for i in range(nVars):
             assline += "@SP A=M M=0 @SP M=M+1 "      # inserting nVars 0 in the stack
 
     elif Parser.cmdType(line) == "C_RETURN":
-        assline = ("@LCL D=M @endFrame M=D "                    # endFrame = LCL
-                   "@5 D=D-A @D D=M @retAddr M=D "              # retAddr = *(endFrame - 5)
-                   "@SP A=M D=M @ARG M=D "                      # ARG = pop() - puts the return value in ARG
-                   "D=A+1 @SP M=D "                             # SP = ARG + 1
-                   "@endFrame D=A @1 D=D-A @D D=M @THAT M=D "   # THAT = *(endFrame - 1)
-                   "@endFrame D=A @2 D=D-A @D D=M @THIS M=D "   # THIS = *(endFrame - 2)
-                   "@endFrame D=A @3 D=D-A @D D=M @ARG M=D "    # ARG = *(endFrame - 3)
-                   "@endFrame D=A @4 D=D-A @D D=M @LCL M=D "    # LCL = *(endFrame - 4)
-                   "@retAddr 0;JMP"
+        assline = ("@LCL D=M @endFrame M=D "                     # endFrame = LCL
+                   "@5 D=D-A A=D D=M @retAddr M=D "              # retAddr = *(endFrame - 5)
+                   "@SP M=M-1 A=M D=M @ARG A=M M=D "             # ARG = pop() - puts the return value in ARG
+                   "@ARG D=M+1 @SP M=D "                         # SP = ARG + 1
+                   "@endFrame D=M @1 D=D-A A=D D=M @THAT M=D "   # THAT = *(endFrame - 1)
+                   "@endFrame D=M @2 D=D-A A=D D=M @THIS M=D "   # THIS = *(endFrame - 2)
+                   "@endFrame D=M @3 D=D-A A=D D=M @ARG M=D "    # ARG = *(endFrame - 3)
+                   "@endFrame D=M @4 D=D-A A=D D=M @LCL M=D "    # LCL = *(endFrame - 4)
+                   "@retAddr A=M 0;JMP"
                    )         
         
     return assline

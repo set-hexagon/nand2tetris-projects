@@ -1,12 +1,14 @@
 import CodeWriter
 from collections import defaultdict
 from pathlib import Path
+import VMTranslator
 
 lineno = defaultdict(int)
 #goes through file line by line and makes another file with same name
-def parse(file, mode):
+def parse(file, mode, output):
     filename = Path(file).stem
-    with open(file, 'r') as VMCode, open(filename + ".asm", mode) as AssCode:
+    outputname = Path(output).stem
+    with open(file, 'r') as VMCode, open(outputname + ".asm", mode) as AssCode:
 
         #goes through the code line by line
         for line in VMCode:
@@ -15,7 +17,7 @@ def parse(file, mode):
                 lineno[filename] += 1
                 ass = CodeWriter.translate(line,filename).split()      
                 
-                AssCode.write("\n//" + line)       #writes the VM line
+                AssCode.write("\n//" + line)       #writes the VM line as comment
                 if line[-1] !=  '\n' : AssCode.write("\n")      #last lines don't have \n
 
                 for a in ass:
