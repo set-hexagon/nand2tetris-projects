@@ -8,7 +8,7 @@
 from pathlib import Path
 import sys
 
-tokenType = ['keyword', 'symbol', 'identifier','int_const', 'var']
+tokenTypes = ['keyword', 'symbol', 'identifier','int_const', 'var']
 
 keywords = [
     'class', 'constructor', 'function', 'method', 'field', 'static',
@@ -40,22 +40,26 @@ def tokenize(file):
 
 # helper for the tokenize function
 # tokenizes the strings containing identifiers or constants
+# goes throught the string one letter at a time and adds it to a buffer depending on whether it's alnum, numeric or symbol
 def moretokenize(word):
     temp_token = []
     buff = ''
     i = 0
     while i < len(word):
         c = word[i]
+        # a symbol is just a token so append it to the list
         if c in symbols:
             temp_token.append(c)
             i += 1
 
-        elif c.isalpha() or c == "\"":
+        # for identifiers which can start only with alphabets or _ but can contain numbers in them
+        # also for StringConstant
+        elif c.isalpha() or c == "_" or c == "\"":
             buff += c
             i += 1
             while i < len(word):
                 c = word[i]
-                if c.isalnum() or c == "\"":
+                if c.isalnum() or c == "_" or c == "\"":
                     buff += c
                 else:                    
                     break
@@ -63,6 +67,7 @@ def moretokenize(word):
             temp_token.append(buff) 
             buff = ''
 
+        # for IntegerConstant
         elif c.isnumeric():
             buff += c
             i += 1
@@ -90,6 +95,9 @@ def hasMoreTokens():
 def advance():
     global token_no
     token_no += 1
+def goback():
+    global token_no
+    token_no -= 1
 
 def tokenType():
     token = tokens[token_no]
@@ -104,32 +112,34 @@ def tokenType():
     else:
         return "IDENTIFIER"
 
+
 def keyword():
     if tokenType() == "KEYWORD":
         return tokens[token_no]
     else:
-        sys.exit("invalid use of function")
+        sys.exit("invalid use of function - keyword")
 
 def symbol():
     if tokenType() == "SYMBOL":
         return tokens[token_no]
     else:
-        sys.exit("invalid use of function")
+        print(tokens[token_no])
+        sys.exit("invalid use of function - symbol")
 
 def identifier():
     if tokenType() == "IDENTIFIER":
         return tokens[token_no]
     else:
-        sys.exit("invalid use of function")
+        sys.exit("invalid use of function - identifier")
 
 def intVal():
     if tokenType() == "INT_CONST":
         return tokens[token_no]
     else:
-        sys.exit("invalid use of function")
+        sys.exit("invalid use of function - int_const")
 
 def strVal():
     if tokenType() == "STRING_CONST":
         return tokens[token_no]
     else:
-        sys.exit("invalid use of function")
+        sys.exit("invalid use of function - string_const")
