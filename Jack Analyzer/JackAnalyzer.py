@@ -9,13 +9,13 @@ import sys
 import os
 from pathlib import Path
 from CompilationEngine import *
-from JackAnalyzer import *
 
 if __name__ == "__main__":
     path = sys.argv[1]
-
     if os.path.isfile(path):
-        exit(0)
+        compile(path)
 
     elif os.path.isdir(path):
-        exit(0)
+        for file in Path(path).rglob("*"):
+            if file.is_file() and file.suffix == ".jack":
+                compile(file)

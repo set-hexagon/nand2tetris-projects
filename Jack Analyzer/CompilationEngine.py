@@ -10,7 +10,7 @@ from pathlib import Path
 terminalElements = ['keyword', 'symbol', 'integerConstant', 'stringConstant', 'identifier', 'keywordConstant']
 operators = ['+', '-', '*', '/', '&', '|', '<', '>', '<=']
 
-def compile(file = "new.jack"):
+def compile(file):
     tabs = 0
     filename = Path(file).stem
     encElem = []    # encountered elements
@@ -74,7 +74,6 @@ def compileClassVarDec():
         advance()
     output += printSymbol()
     output += "</classVarDec>\n"
-    print(output)
     return output
 
 #('construnctor'|'function'|'method') ('void'|type) subroutineName'('parameterList')' subroutineBody
@@ -97,7 +96,6 @@ def compileSubroutine():
     advance()
     output += compileSubroutineBody()
     output += "</subroutineDec>\n"
-    print(output)
     return output
 
 #((type varName)(',' type varName)*)?
@@ -117,13 +115,11 @@ def compileParameterList():
             advance()
     retreat()
     output += "</parameterList>\n"
-    print(output)
     return output 
 
 #'{'varDec* statements'}'
 def compileSubroutineBody():
     output = "<subroutineBody>\n"
-    print("hey",tokens[token_no-2],tokens[token_no])
     output += printSymbol()
     
     advance()
@@ -135,7 +131,6 @@ def compileSubroutineBody():
 
     output += printSymbol()
     output += "</subroutineBody>\n"
-    print(output)
     return output
 
 # 'var' type varName (',' varName)*;
@@ -154,7 +149,6 @@ def compileVarDec():
         advance()
     output += printSymbol()
     output += "</VarDec>\n"
-    print(output)
     return output
 
 # statements = statement*
@@ -176,7 +170,6 @@ def compileStatements():
         advance()
     retreat()
     output += "</statements>\n"
-    print(output)
     return output
 
 # 'let' varName('['expression']')? '=' expression;
@@ -199,7 +192,6 @@ def compileLet():
     advance()
     output += printSymbol()
     output += "</letStatement>\n"
-    print(output)
     return output
 
 # 'if' '('expression')''{'statements'}' ('else')'{'statements'}')?
@@ -230,7 +222,6 @@ def compileIf():
     else:
         retreat()
     output += "</ifStatement>\n"
-    print(output)
     return output
 
 # 'while' '('expression')''{'statements'}'
@@ -250,7 +241,6 @@ def compileWhile():
     advance()
     output += printSymbol()
     output += "</whileStatement>\n"
-    print(output)
     return output
 
 # 'do' subroutineCall';'
@@ -262,7 +252,6 @@ def compileDo():
     advance()
     output += printSymbol()
     output += "</doStatement>\n"
-    print(output)
     return output
 
 # 'return' expression?';'
@@ -275,7 +264,6 @@ def compileReturn():
         advance()
     output += printSymbol()    
     output += "</returnStatement>\n"
-    print(output)
     return output
 
 # subroutineName'('expressionList')'|(className|varName)'.'subroutineName'('expressionList')'
@@ -291,7 +279,6 @@ def compileSubroutineCall():
     elif symbol() == ".":
         advance()
         output += compileSubroutineCall()
-    print(output)
     return output
 
 # term (op term)*
@@ -322,7 +309,6 @@ def compileExpression():
         openbracket = False
     else:
         retreat()
-    print(output)
     return output
 
 # keywordConstant = ['true', 'false', 'none', 'this']
@@ -363,7 +349,6 @@ def compileTerm():
         output += compileTerm()
 
     output += "</term>\n"
-    print(output)
     return output
 
 # (expression(','expression)*)?
@@ -381,7 +366,6 @@ def compileExpressionList():
     else:
         retreat()
     output += "</expressionList>\n"
-    print(output)
     return output
 
 
@@ -404,5 +388,3 @@ def printType():
         return "<keyword> " + keyword() + " </keyword>\n"
     elif tokenType() == "IDENTIFIER":
         return "<identifier> " + identifier() + " </identifier>\n"
-
-compile()  

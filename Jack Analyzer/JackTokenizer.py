@@ -22,35 +22,34 @@ symbols = [
 ]
 
 tokens = []
-lineno = 0
 
-#TODO: ignore comments
+#TODO: inline comments
 # initializer
 # returns a list of the tokens in a .jack file
 def tokenize(file):
-    global tokens, lineno
+    global tokens
     mLineCmt = False
+    sLineCmt = False
     with open(file, 'r') as JackFile:
         for line in JackFile:
-            lineno += 1
-            #ignoring comments
-            line = line.strip()
-            if line.startswith("//"): continue
-            elif line.startswith("/*"): mLineCmt = True
-            if line.endswith("*/"):
-                mLineCmt = False
-                continue
-            if mLineCmt == True: continue
-
-            line = line.split()
+            line = line.strip().split()
             for word in line:
+                #ignoring comments
+                if word.startswith("//"): sLineCmt = True
+                elif word.startswith("/*"): mLineCmt = True
+                if word.endswith("*/"):
+                    mLineCmt = False
+                    continue
+                if mLineCmt or sLineCmt == True: continue
+
                 if word in keywords:
                     tokens.append(word)
                 elif word in symbols:
                     tokens.append(word)
                 else:
                     tokens += moretokenize(word)
-
+            sLineCmt = False
+            
 # helper for the tokenize function
 # tokenizes the strings containing identifiers or constants
 # goes throught the string one letter at a time and adds it to a buffer depending on whether it's alnum, numeric or symbol
@@ -156,7 +155,3 @@ def strVal():
         return tokens[token_no].strip("\"")
     else:
         sys.exit("invalid use of function - string_const")
-
-
-tokenize("new.jack")
-print(tokens)
