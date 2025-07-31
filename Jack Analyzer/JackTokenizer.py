@@ -22,14 +22,27 @@ symbols = [
 ]
 
 tokens = []
+lineno = 0
 
+#TODO: ignore comments
 # initializer
 # returns a list of the tokens in a .jack file
 def tokenize(file):
-    global tokens
+    global tokens, lineno
+    mLineCmt = False
     with open(file, 'r') as JackFile:
         for line in JackFile:
-            line = line.strip().split()
+            lineno += 1
+            #ignoring comments
+            line = line.strip()
+            if line.startswith("//"): continue
+            elif line.startswith("/*"): mLineCmt = True
+            if line.endswith("*/"):
+                mLineCmt = False
+                continue
+            if mLineCmt == True: continue
+
+            line = line.split()
             for word in line:
                 if word in keywords:
                     tokens.append(word)
@@ -95,7 +108,7 @@ def hasMoreTokens():
 def advance():
     global token_no
     token_no += 1
-def goback():
+def retreat():
     global token_no
     token_no -= 1
 
@@ -122,9 +135,9 @@ def keyword():
 def symbol():
     if tokenType() == "SYMBOL":
         return tokens[token_no]
-    else:
+    '''else:
         print(tokens[token_no])
-        sys.exit("invalid use of function - symbol")
+        sys.exit("invalid use of function - symbol " + str(lineno))'''
 
 def identifier():
     if tokenType() == "IDENTIFIER":
@@ -134,12 +147,16 @@ def identifier():
 
 def intVal():
     if tokenType() == "INT_CONST":
-        return tokens[token_no]
+        return int(tokens[token_no])
     else:
         sys.exit("invalid use of function - int_const")
 
 def strVal():
     if tokenType() == "STRING_CONST":
-        return tokens[token_no]
+        return tokens[token_no].strip("\"")
     else:
         sys.exit("invalid use of function - string_const")
+
+
+tokenize("new.jack")
+print(tokens)
