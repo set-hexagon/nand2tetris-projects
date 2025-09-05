@@ -5,8 +5,11 @@
 #called by compilation engine, opens the file and returns a token
 #skips comments and whitespaces
 
+#TODO: add symbol table
+
 from pathlib import Path
 import sys
+import re
 
 tokenTypes = ['keyword', 'symbol', 'identifier','int_const', 'var']
 
@@ -22,11 +25,14 @@ symbols = [
 ]
 
 tokens = []
+strConst = False
+strBuff = ''
 
+#TODO: string literals can't contain blank spaces
 # initializer
 # returns a list of the tokens in a .jack file
 def tokenize(file):
-    global tokens
+    global tokens, strConst, strBuff
     mLineCmt = False
     sLineCmt = False
     with open(file, 'r') as JackFile:
@@ -48,11 +54,13 @@ def tokenize(file):
                 else:
                     tokens += moretokenize(word)
             sLineCmt = False
-            
+    print(tokens)
+
 # helper for the tokenize function
 # tokenizes the strings containing identifiers or constants
 # goes throught the string one letter at a time and adds it to a buffer depending on whether it's alnum, numeric or symbol
 def moretokenize(word):
+    global strConst, strBuff
     temp_token = []
     buff = ''
     i = 0
@@ -63,19 +71,34 @@ def moretokenize(word):
             temp_token.append(c)
             i += 1
 
+        # for StringConstant
+        elif c == "\"" or strConst:
+            strConst = not strConst
+            strBuff += c
+            i += 1
+            while i < len(word):
+                c = word[i]
+                strBuff += c
+                if c == "\"":
+                    i += 1
+                    break
+                i += 1
+            temp_token.append(buff)
+            buff = ''
+
         # for identifiers which can start only with alphabets or _ but can contain numbers in them
-        # also for StringConstant
-        elif c.isalpha() or c == "_" or c == "\"":
+        elif c.isalpha() or c == "_":
+            # Start of identifier
             buff += c
             i += 1
             while i < len(word):
                 c = word[i]
-                if c.isalnum() or c == "_" or c == "\"":
+                if c.isalnum() or c == "_":
                     buff += c
-                else:                    
+                    i += 1
+                else:
                     break
-                i += 1
-            temp_token.append(buff) 
+            temp_token.append(buff)
             buff = ''
 
         # for IntegerConstant
@@ -133,9 +156,8 @@ def keyword():
 def symbol():
     if tokenType() == "SYMBOL":
         return tokens[token_no]
-    '''else:
-        print(tokens[token_no])
-        sys.exit("invalid use of function - symbol " + str(lineno))'''
+    else:
+        sys.exit("invalid use of function - symbol " )
 
 def identifier():
     if tokenType() == "IDENTIFIER":
@@ -154,3 +176,5 @@ def strVal():
         return tokens[token_no].strip("\"")
     else:
         sys.exit("invalid use of function - string_const")
+
+
